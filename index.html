@@ -1,0 +1,3506 @@
+<!DOCTYPE html>
+<html lang="ko">
+<head>
+  <meta charset="UTF-8">
+
+  <meta
+    name="viewport"
+    content="width=device-width, initial-scale=1.0"
+  >
+
+  <meta
+    name="description"
+    content="이화여고 고양이들의 출몰 기록을 분석하는 360도 3D 캠퍼스 지도"
+  >
+
+  <title>이화냥이 360° 3D 출몰 지도</title>
+
+  <style>
+    :root {
+      --green-950: #0d3328;
+      --green-900: #124636;
+      --green-800: #1b5c48;
+      --green-700: #28745b;
+      --green-600: #3b8e70;
+      --green-100: #e4f0ea;
+      --green-50: #f4f8f6;
+
+      --surface: #ffffff;
+      --border: #d4e1da;
+      --text: #153d31;
+      --muted: #718078;
+
+      --orange: #ee8734;
+      --blue: #4387c6;
+      --gray: #929b97;
+      --yellow: #e3aa1d;
+      --danger: #b54a4a;
+
+      --shadow:
+        0 14px 34px rgba(13, 51, 40, 0.11);
+    }
+
+    * {
+      box-sizing: border-box;
+    }
+
+    html {
+      scroll-behavior: smooth;
+    }
+
+    body {
+      margin: 0;
+      min-width: 320px;
+      color: var(--text);
+      background: var(--green-50);
+      font-family:
+        Arial,
+        "Noto Sans KR",
+        "Apple SD Gothic Neo",
+        sans-serif;
+    }
+
+    button,
+    input,
+    select,
+    textarea {
+      font: inherit;
+    }
+
+    button {
+      cursor: pointer;
+    }
+
+    img {
+      display: block;
+      max-width: 100%;
+    }
+
+    .site-header {
+      position: relative;
+      overflow: hidden;
+      padding: 26px 20px 46px;
+      color: white;
+      text-align: center;
+      background:
+        radial-gradient(
+          circle at 15% 25%,
+          rgba(255, 255, 255, 0.08),
+          transparent 20%
+        ),
+        radial-gradient(
+          circle at 85% 55%,
+          rgba(255, 255, 255, 0.08),
+          transparent 20%
+        ),
+        linear-gradient(
+          135deg,
+          #0d3328,
+          #1b5d47
+        );
+    }
+
+    .site-header::before,
+    .site-header::after {
+      position: absolute;
+      font-size: 82px;
+      content: "🐾";
+      opacity: 0.07;
+      pointer-events: none;
+    }
+
+    .site-header::before {
+      top: 10px;
+      left: 28px;
+      transform: rotate(-18deg);
+    }
+
+    .site-header::after {
+      right: 30px;
+      bottom: -5px;
+      transform: rotate(18deg);
+    }
+
+    .logo-button {
+      position: relative;
+      z-index: 2;
+      display: inline-flex;
+      align-items: center;
+      justify-content: center;
+      margin-bottom: 16px;
+      padding: 10px 18px;
+      border: 0;
+      border-radius: 16px;
+      background: rgba(255, 255, 255, 0.97);
+      box-shadow:
+        0 14px 30px rgba(0, 0, 0, 0.22);
+    }
+
+    .logo-button img {
+      width: min(330px, 76vw);
+      height: auto;
+    }
+
+    .header-badge {
+      display: inline-block;
+      padding: 7px 14px;
+      border: 1px solid rgba(255, 255, 255, 0.3);
+      border-radius: 999px;
+      background: rgba(255, 255, 255, 0.09);
+      font-size: 0.82rem;
+      font-weight: 800;
+    }
+
+    .site-header h1 {
+      margin: 13px 0 0;
+      font-size: clamp(2rem, 6vw, 3.6rem);
+    }
+
+    .site-header p {
+      margin: 12px 0 0;
+      color: rgba(255, 255, 255, 0.86);
+      line-height: 1.7;
+    }
+
+    main {
+      width: min(1240px, calc(100% - 28px));
+      margin: 22px auto 60px;
+    }
+
+    section,
+    .panel {
+      margin-bottom: 22px;
+      padding: 22px;
+      border: 1px solid var(--border);
+      border-radius: 19px;
+      background: var(--surface);
+      box-shadow: var(--shadow);
+    }
+
+    section h2,
+    .panel h2 {
+      margin: 0;
+      font-size: 1.4rem;
+    }
+
+    .section-description {
+      margin: 8px 0 0;
+      color: var(--muted);
+      line-height: 1.65;
+    }
+
+    .top-grid {
+      display: grid;
+      grid-template-columns: 0.85fr 1.15fr;
+      gap: 18px;
+    }
+
+    .project-text {
+      margin: 16px 0 0;
+      line-height: 1.8;
+    }
+
+    .formula {
+      margin-top: 16px;
+      padding: 14px;
+      border-radius: 12px;
+      color: var(--green-900);
+      background: var(--green-100);
+      font-weight: 800;
+      text-align: center;
+    }
+
+    .stats-grid {
+      display: grid;
+      grid-template-columns: repeat(4, 1fr);
+      gap: 12px;
+      margin-top: 17px;
+    }
+
+    .stat-card {
+      min-height: 120px;
+      padding: 17px 12px;
+      border: 1px solid var(--border);
+      border-radius: 14px;
+      text-align: center;
+      background:
+        linear-gradient(
+          180deg,
+          #ffffff,
+          var(--green-50)
+        );
+    }
+
+    .stat-card span {
+      color: var(--muted);
+      font-size: 0.8rem;
+      font-weight: 800;
+    }
+
+    .stat-card strong {
+      display: block;
+      margin-top: 11px;
+      color: var(--green-800);
+      font-size: clamp(1.5rem, 4vw, 2.15rem);
+    }
+
+    .stat-card small {
+      display: block;
+      margin-top: 8px;
+      color: var(--muted);
+    }
+
+    .map-header {
+      display: flex;
+      align-items: flex-end;
+      justify-content: space-between;
+      gap: 18px;
+      margin-bottom: 17px;
+    }
+
+    .filter-status {
+      padding: 8px 13px;
+      border-radius: 999px;
+      color: var(--green-800);
+      background: var(--green-100);
+      font-size: 0.82rem;
+      font-weight: 800;
+      white-space: nowrap;
+    }
+
+    .map-controls {
+      display: flex;
+      flex-wrap: wrap;
+      align-items: center;
+      justify-content: space-between;
+      gap: 12px;
+      margin-bottom: 16px;
+    }
+
+    .button-group {
+      display: flex;
+      flex-wrap: wrap;
+      gap: 8px;
+    }
+
+    .control-button,
+    .filter-button {
+      padding: 9px 13px;
+      border: 1px solid var(--border);
+      border-radius: 10px;
+      color: var(--green-800);
+      background: white;
+      font-weight: 800;
+    }
+
+    .control-button:hover,
+    .filter-button:hover {
+      background: var(--green-50);
+    }
+
+    .filter-button.active {
+      border-color: var(--green-700);
+      color: white;
+      background: var(--green-700);
+    }
+
+    .map-layout {
+      display: grid;
+      grid-template-columns: minmax(0, 1fr) 315px;
+      gap: 18px;
+    }
+
+    /* =========================
+       3D 장면
+    ========================= */
+
+    .scene-viewport {
+      position: relative;
+      min-height: 700px;
+      overflow: hidden;
+      border: 1px solid var(--border);
+      border-radius: 18px;
+      background:
+        radial-gradient(
+          circle at 50% 38%,
+          #ffffff 0%,
+          #edf4f0 57%,
+          #cadbd2 100%
+        );
+      cursor: grab;
+      touch-action: none;
+      user-select: none;
+    }
+
+    .scene-viewport.dragging {
+      cursor: grabbing;
+    }
+
+    .scene-shadow {
+      position: absolute;
+      left: 50%;
+      top: 58%;
+      width: 650px;
+      height: 300px;
+      border-radius: 50%;
+      background: rgba(24, 65, 51, 0.15);
+      filter: blur(31px);
+      transform: translate(-50%, -50%);
+      pointer-events: none;
+    }
+
+    .scene-camera {
+      position: absolute;
+      inset: 0;
+      display: grid;
+      place-items: center;
+      perspective: 1300px;
+      perspective-origin: 50% 43%;
+    }
+
+    .campus-scene {
+      position: relative;
+      width: 680px;
+      height: 480px;
+      transform-style: preserve-3d;
+      will-change: transform;
+    }
+
+    .campus-base {
+      position: absolute;
+      left: 0;
+      top: 0;
+      width: 680px;
+      height: 480px;
+      border: 13px solid #315b45;
+      border-radius: 22px;
+      background:
+        repeating-linear-gradient(
+          0deg,
+          transparent 0 39px,
+          rgba(255, 255, 255, 0.045) 40px
+        ),
+        repeating-linear-gradient(
+          90deg,
+          transparent 0 39px,
+          rgba(255, 255, 255, 0.045) 40px
+        ),
+        #638c6d;
+      box-shadow:
+        0 0 0 5px #234636,
+        inset 0 0 45px rgba(0, 0, 0, 0.13);
+      transform-style: preserve-3d;
+    }
+
+    .campus-base::after {
+      position: absolute;
+      left: 0;
+      top: 0;
+      width: 100%;
+      height: 100%;
+      border-radius: 10px;
+      content: "";
+      background:
+        linear-gradient(
+          90deg,
+          transparent 0 47%,
+          rgba(229, 206, 170, 0.65) 47% 51%,
+          transparent 51%
+        ),
+        linear-gradient(
+          transparent 0 61%,
+          rgba(229, 206, 170, 0.55) 61% 65%,
+          transparent 65%
+        );
+      pointer-events: none;
+    }
+
+    .playground {
+      position: absolute;
+      left: 70px;
+      top: 105px;
+      width: 220px;
+      height: 135px;
+      border: 7px solid #ddcba0;
+      border-radius: 50%;
+      background: #8baa70;
+      box-shadow:
+        inset 0 0 0 5px rgba(255, 255, 255, 0.16);
+      transform: translateZ(3px);
+    }
+
+    .playground::before {
+      position: absolute;
+      left: 50%;
+      top: 9px;
+      width: 1px;
+      height: calc(100% - 18px);
+      background: rgba(255, 255, 255, 0.45);
+      content: "";
+    }
+
+    .playground span {
+      position: absolute;
+      left: 50%;
+      top: 50%;
+      color: white;
+      font-size: 0.79rem;
+      font-weight: 900;
+      text-shadow:
+        0 2px 4px rgba(0, 0, 0, 0.35);
+      transform:
+        translate(-50%, -50%)
+        rotateZ(18deg);
+    }
+
+    .road {
+      position: absolute;
+      border-radius: 999px;
+      background: #d7b995;
+      transform: translateZ(2px);
+    }
+
+    .road-vertical {
+      left: 328px;
+      top: 38px;
+      width: 18px;
+      height: 395px;
+    }
+
+    .road-horizontal {
+      left: 42px;
+      top: 300px;
+      width: 570px;
+      height: 17px;
+    }
+
+    .road-diagonal {
+      left: 365px;
+      top: 198px;
+      width: 250px;
+      height: 16px;
+      transform:
+        translateZ(2px)
+        rotateZ(-25deg);
+      transform-origin: left center;
+    }
+
+    .tree {
+      position: absolute;
+      width: 27px;
+      height: 27px;
+      border: 4px solid #2d6044;
+      border-radius: 50%;
+      background: #4d9060;
+      box-shadow:
+        inset -5px -7px 0 rgba(0, 0, 0, 0.12);
+      transform: translateZ(18px);
+    }
+
+    /*
+      정확한 직육면체 구조
+
+      좌표 체계:
+      X = 가로
+      Y = 깊이
+      Z = 높이
+
+      top    : XY 평면, Z = 높이
+      front  : XZ 평면, Y = 깊이
+      back   : XZ 평면, Y = 0
+      left   : YZ 평면, X = 0
+      right  : YZ 평면, X = 너비
+    */
+
+    .building {
+      --w: 120px;
+      --d: 80px;
+      --h: 80px;
+
+      --roof: #e8e7e1;
+      --front: #d0d2cd;
+      --back: #bec2bd;
+      --left: #b0b5b0;
+      --right: #a2a8a3;
+
+      position: absolute;
+      width: var(--w);
+      height: var(--d);
+      margin: 0;
+      padding: 0;
+      border: 0;
+      color: inherit;
+      background: transparent;
+      transform-style: preserve-3d;
+      appearance: none;
+    }
+
+    .building-face {
+      position: absolute;
+      display: block;
+      margin: 0;
+      border: 2px solid rgba(34, 57, 48, 0.32);
+      backface-visibility: visible;
+      transform-style: preserve-3d;
+      pointer-events: none;
+    }
+
+    .face-top {
+      left: 0;
+      top: 0;
+      width: var(--w);
+      height: var(--d);
+      border-radius: 4px;
+      background:
+        repeating-linear-gradient(
+          90deg,
+          transparent 0 17px,
+          rgba(0, 0, 0, 0.05) 18px 19px
+        ),
+        var(--roof);
+      transform:
+        translateZ(var(--h));
+    }
+
+    .face-front {
+      left: 0;
+      top: var(--d);
+      width: var(--w);
+      height: var(--h);
+      background:
+        repeating-linear-gradient(
+          90deg,
+          rgba(35, 64, 54, 0.25) 0 7px,
+          transparent 7px 15px
+        ),
+        repeating-linear-gradient(
+          0deg,
+          transparent 0 14px,
+          rgba(255, 255, 255, 0.4) 15px 17px
+        ),
+        var(--front);
+      transform-origin: top left;
+      transform:
+        rotateX(90deg);
+    }
+
+    .face-back {
+      left: 0;
+      top: 0;
+      width: var(--w);
+      height: var(--h);
+      background:
+        repeating-linear-gradient(
+          90deg,
+          rgba(35, 64, 54, 0.2) 0 7px,
+          transparent 7px 15px
+        ),
+        var(--back);
+      transform-origin: top left;
+      transform:
+        rotateX(90deg);
+    }
+
+    .face-left {
+      left: 0;
+      top: 0;
+      width: var(--d);
+      height: var(--h);
+      background:
+        repeating-linear-gradient(
+          90deg,
+          rgba(35, 64, 54, 0.2) 0 6px,
+          transparent 6px 14px
+        ),
+        var(--left);
+      transform-origin: top left;
+      transform:
+        rotateZ(90deg)
+        rotateX(90deg);
+    }
+
+    .face-right {
+      left: var(--w);
+      top: 0;
+      width: var(--d);
+      height: var(--h);
+      background:
+        repeating-linear-gradient(
+          90deg,
+          rgba(35, 64, 54, 0.22) 0 6px,
+          transparent 6px 14px
+        ),
+        var(--right);
+      transform-origin: top left;
+      transform:
+        rotateZ(90deg)
+        rotateX(90deg);
+    }
+
+    .building-name {
+      position: absolute;
+      left: 50%;
+      top: 50%;
+      max-width: calc(100% - 12px);
+      padding: 5px 7px;
+      border-radius: 7px;
+      color: #163d31;
+      background: rgba(255, 255, 255, 0.9);
+      box-shadow:
+        0 3px 8px rgba(0, 0, 0, 0.17);
+      font-size: 0.64rem;
+      font-weight: 900;
+      line-height: 1.25;
+      text-align: center;
+      transform: translate(-50%, -50%);
+      pointer-events: none;
+    }
+
+    .building-number {
+      position: absolute;
+      left: 50%;
+      top: 50%;
+      z-index: 5;
+      display: grid;
+      place-items: center;
+      width: 35px;
+      height: 35px;
+      border: 3px solid white;
+      border-radius: 50%;
+      color: white;
+      background: #261c82;
+      box-shadow:
+        0 5px 12px rgba(0, 0, 0, 0.3);
+      font-size: 1rem;
+      font-weight: 900;
+      transform:
+        translate(-50%, -50%)
+        translateZ(calc(var(--h) + 10px));
+      transition:
+        background 0.18s ease,
+        transform 0.18s ease;
+      pointer-events: none;
+    }
+
+    .building:hover .building-number,
+    .building.selected .building-number {
+      background: var(--orange);
+      transform:
+        translate(-50%, -50%)
+        translateZ(calc(var(--h) + 17px))
+        scale(1.18);
+    }
+
+    .building:hover .face-top,
+    .building.selected .face-top {
+      border-color: var(--orange);
+      box-shadow:
+        inset 0 0 0 5px rgba(238, 135, 52, 0.23);
+    }
+
+    .cat-pins {
+      position: absolute;
+      left: 50%;
+      top: 8px;
+      z-index: 6;
+      display: flex;
+      gap: 4px;
+      transform:
+        translateX(-50%)
+        translateZ(calc(var(--h) + 18px));
+      pointer-events: none;
+    }
+
+    .cat-pin {
+      display: grid;
+      place-items: center;
+      width: 23px;
+      height: 23px;
+      border: 2px solid white;
+      border-radius: 50%;
+      box-shadow:
+        0 4px 8px rgba(0, 0, 0, 0.23);
+      font-size: 0.61rem;
+    }
+
+    .cat-pin.honghap {
+      background: var(--orange);
+    }
+
+    .cat-pin.baekhap {
+      color: #222222;
+      background: #fafaf5;
+    }
+
+    .cat-pin.audrey {
+      background: var(--blue);
+    }
+
+    .cat-pin.hepburn {
+      background: var(--gray);
+    }
+
+    .cat-pin.peanut {
+      background: var(--yellow);
+    }
+
+    .cat-pin.none {
+      color: #67736e;
+      background: white;
+    }
+
+    .angle-indicator {
+      position: absolute;
+      top: 13px;
+      right: 13px;
+      z-index: 20;
+      padding: 8px 11px;
+      border-radius: 9px;
+      color: var(--green-900);
+      background: rgba(255, 255, 255, 0.94);
+      box-shadow:
+        0 5px 15px rgba(0, 0, 0, 0.12);
+      font-size: 0.76rem;
+      font-weight: 800;
+      pointer-events: none;
+    }
+
+    .scene-guide {
+      position: absolute;
+      left: 13px;
+      bottom: 13px;
+      z-index: 20;
+      max-width: calc(100% - 26px);
+      margin: 0;
+      padding: 9px 12px;
+      border-radius: 10px;
+      color: var(--green-900);
+      background: rgba(255, 255, 255, 0.94);
+      box-shadow:
+        0 5px 15px rgba(0, 0, 0, 0.14);
+      font-size: 0.75rem;
+      font-weight: 800;
+      pointer-events: none;
+    }
+
+    /* 장소 상세 */
+
+    .place-details {
+      padding: 21px;
+      border: 1px solid var(--border);
+      border-radius: 18px;
+      background:
+        linear-gradient(
+          180deg,
+          white,
+          var(--green-50)
+        );
+    }
+
+    .place-details h3 {
+      margin: 0;
+      font-size: 1.28rem;
+    }
+
+    .detail-filter {
+      margin: 7px 0 16px;
+      color: var(--muted);
+      font-size: 0.84rem;
+      line-height: 1.5;
+    }
+
+    .rate-box {
+      padding: 17px;
+      border-radius: 14px;
+      color: white;
+      background:
+        linear-gradient(
+          135deg,
+          var(--green-900),
+          var(--green-700)
+        );
+    }
+
+    .rate-box span {
+      font-size: 0.82rem;
+      opacity: 0.86;
+    }
+
+    .rate-box strong {
+      display: block;
+      margin-top: 6px;
+      font-size: 2.2rem;
+    }
+
+    .progress {
+      height: 8px;
+      margin-top: 10px;
+      overflow: hidden;
+      border-radius: 999px;
+      background: rgba(255, 255, 255, 0.22);
+    }
+
+    .progress-bar {
+      width: 0;
+      height: 100%;
+      border-radius: inherit;
+      background: white;
+      transition: width 0.3s ease;
+    }
+
+    .detail-list {
+      margin: 16px 0 0;
+    }
+
+    .detail-row {
+      display: flex;
+      justify-content: space-between;
+      gap: 12px;
+      padding: 11px 0;
+      border-bottom: 1px solid var(--border);
+    }
+
+    .detail-row dt {
+      color: var(--muted);
+      font-size: 0.82rem;
+    }
+
+    .detail-row dd {
+      margin: 0;
+      font-size: 0.84rem;
+      font-weight: 900;
+      text-align: right;
+    }
+
+    /* 고양이 도감 */
+
+    .cat-grid {
+      display: grid;
+      grid-template-columns: repeat(5, 1fr);
+      gap: 14px;
+      margin-top: 18px;
+    }
+
+    .cat-card {
+      overflow: hidden;
+      border: 1px solid var(--border);
+      border-radius: 16px;
+      background: white;
+      transition:
+        transform 0.2s ease,
+        box-shadow 0.2s ease;
+    }
+
+    .cat-card:hover {
+      transform: translateY(-4px);
+      box-shadow:
+        0 13px 28px rgba(13, 53, 41, 0.14);
+    }
+
+    .cat-photo {
+      width: 100%;
+      height: 210px;
+      object-fit: cover;
+    }
+
+    .cat-content {
+      padding: 15px;
+    }
+
+    .cat-title {
+      display: flex;
+      align-items: center;
+      justify-content: space-between;
+      gap: 10px;
+    }
+
+    .cat-title h3 {
+      margin: 0;
+      font-size: 1.08rem;
+    }
+
+    .cat-color {
+      width: 22px;
+      height: 22px;
+      border: 2px solid white;
+      border-radius: 50%;
+      box-shadow:
+        0 2px 7px rgba(0, 0, 0, 0.2);
+    }
+
+    .cat-color.honghap {
+      background: var(--orange);
+    }
+
+    .cat-color.baekhap {
+      border-color: #a7ada9;
+      background: white;
+    }
+
+    .cat-color.audrey {
+      background: var(--blue);
+    }
+
+    .cat-color.hepburn {
+      background: var(--gray);
+    }
+
+    .cat-color.peanut {
+      background: var(--yellow);
+    }
+
+    .cat-stat {
+      margin: 9px 0 0;
+      color: var(--muted);
+      font-size: 0.79rem;
+      line-height: 1.65;
+    }
+
+    /* 입력 폼 */
+
+    .bottom-grid {
+      display: grid;
+      grid-template-columns: 0.86fr 1.14fr;
+      gap: 18px;
+    }
+
+    .form-grid {
+      display: grid;
+      grid-template-columns: repeat(2, 1fr);
+      gap: 14px;
+      margin-top: 17px;
+    }
+
+    .field-group.full {
+      grid-column: 1 / -1;
+    }
+
+    label {
+      display: block;
+      margin-bottom: 7px;
+      font-size: 0.83rem;
+      font-weight: 900;
+    }
+
+    input,
+    select,
+    textarea {
+      width: 100%;
+      padding: 11px 12px;
+      border: 1px solid #cad9d1;
+      border-radius: 9px;
+      color: var(--text);
+      background: white;
+    }
+
+    input:focus,
+    select:focus,
+    textarea:focus {
+      border-color: var(--green-600);
+      outline: 3px solid rgba(58, 142, 112, 0.14);
+    }
+
+    textarea {
+      min-height: 105px;
+      resize: vertical;
+    }
+
+    .custom-location {
+      display: none;
+      margin-top: 11px;
+    }
+
+    .custom-location.visible {
+      display: block;
+    }
+
+    .cat-checkbox-grid {
+      display: grid;
+      grid-template-columns: repeat(3, 1fr);
+      gap: 8px;
+    }
+
+    .cat-checkbox {
+      position: relative;
+    }
+
+    .cat-checkbox input {
+      position: absolute;
+      opacity: 0;
+      pointer-events: none;
+    }
+
+    .cat-checkbox label {
+      display: flex;
+      align-items: center;
+      justify-content: center;
+      min-height: 50px;
+      margin: 0;
+      padding: 9px;
+      border: 2px solid var(--border);
+      border-radius: 10px;
+      text-align: center;
+      cursor: pointer;
+    }
+
+    .cat-checkbox input:checked + label {
+      border-color: var(--green-700);
+      background: var(--green-100);
+    }
+
+    .action-buttons {
+      display: flex;
+      flex-wrap: wrap;
+      gap: 9px;
+      margin-top: 17px;
+    }
+
+    .primary-button,
+    .secondary-button,
+    .danger-button {
+      padding: 11px 16px;
+      border-radius: 10px;
+      font-weight: 900;
+    }
+
+    .primary-button {
+      border: 0;
+      color: white;
+      background: var(--green-700);
+    }
+
+    .secondary-button {
+      border: 1px solid var(--border);
+      color: var(--green-800);
+      background: white;
+    }
+
+    .danger-button {
+      border: 1px solid #e3c5c5;
+      color: var(--danger);
+      background: #fff7f7;
+    }
+
+    .form-message {
+      min-height: 21px;
+      margin: 12px 0 0;
+      color: var(--green-700);
+      font-size: 0.84rem;
+      font-weight: 800;
+    }
+
+    /* 표 */
+
+    .table-wrapper {
+      overflow-x: auto;
+      margin-top: 17px;
+      border: 1px solid var(--border);
+      border-radius: 13px;
+    }
+
+    table {
+      width: 100%;
+      min-width: 850px;
+      border-collapse: collapse;
+    }
+
+    th,
+    td {
+      padding: 11px;
+      border-bottom: 1px solid var(--border);
+      font-size: 0.78rem;
+      text-align: left;
+      vertical-align: top;
+    }
+
+    th {
+      color: var(--green-900);
+      background: var(--green-100);
+    }
+
+    tbody tr:hover {
+      background: var(--green-50);
+    }
+
+    .delete-record {
+      padding: 5px 8px;
+      border: 1px solid #e1c3c3;
+      border-radius: 7px;
+      color: var(--danger);
+      background: white;
+      font-size: 0.73rem;
+      font-weight: 800;
+    }
+
+    footer {
+      padding: 28px 20px;
+      color: rgba(255, 255, 255, 0.82);
+      text-align: center;
+      background: var(--green-950);
+      font-size: 0.82rem;
+    }
+
+    @media (max-width: 1080px) {
+      .map-layout,
+      .bottom-grid {
+        grid-template-columns: 1fr;
+      }
+
+      .cat-grid {
+        grid-template-columns: repeat(3, 1fr);
+      }
+    }
+
+    @media (max-width: 820px) {
+      .top-grid {
+        grid-template-columns: 1fr;
+      }
+
+      .stats-grid {
+        grid-template-columns: repeat(2, 1fr);
+      }
+
+      .scene-viewport {
+        min-height: 590px;
+      }
+    }
+
+    @media (max-width: 620px) {
+      main {
+        width: min(100% - 18px, 1240px);
+      }
+
+      section,
+      .panel {
+        padding: 17px;
+        border-radius: 15px;
+      }
+
+      .map-header {
+        align-items: flex-start;
+        flex-direction: column;
+      }
+
+      .stats-grid,
+      .form-grid,
+      .cat-grid {
+        grid-template-columns: 1fr;
+      }
+
+      .field-group.full {
+        grid-column: auto;
+      }
+
+      .cat-checkbox-grid {
+        grid-template-columns: repeat(2, 1fr);
+      }
+
+      .scene-viewport {
+        min-height: 500px;
+      }
+
+      .cat-photo {
+        height: 280px;
+      }
+    }
+  </style>
+</head>
+
+<body>
+  <header class="site-header">
+    <button
+      class="logo-button"
+      id="homeResetButton"
+      type="button"
+      aria-label="화면과 지도 초기화"
+    >
+      <img
+        src="ewha-logo.png"
+        alt="이화여자고등학교 로고"
+      >
+    </button>
+
+    <div>
+      <span class="header-badge">
+        🐾 이화여고 냥이 통계 프로젝트 🐾
+      </span>
+    </div>
+
+    <h1>이화냥이 360° 3D 출몰 지도</h1>
+
+    <p>
+      캠퍼스를 회전하여 장소를 확인하고
+      다섯 고양이의 출몰 기록을 분석합니다.
+    </p>
+  </header>
+
+  <main>
+    <div class="top-grid">
+      <article class="panel">
+        <h2>프로젝트 소개</h2>
+
+        <p class="project-text">
+          이화여고의 주요 건물을 직육면체 형태로 구현한
+          360도 회전형 3D 지도입니다. 각 건물은 위·앞·뒤·왼쪽·오른쪽
+          면이 정확히 연결된 구조로 만들어졌습니다.
+        </p>
+
+        <div class="formula">
+          출몰 상대도수 =
+          발견 횟수 ÷ 관찰 횟수 × 100(%)
+        </div>
+      </article>
+
+      <article class="panel">
+        <h2>현재 통계</h2>
+
+        <div class="stats-grid">
+          <div class="stat-card">
+            <span>전체 관찰 횟수</span>
+            <strong id="totalObservations">0회</strong>
+            <small>미발견 포함</small>
+          </div>
+
+          <div class="stat-card">
+            <span>고양이 발견 횟수</span>
+            <strong id="totalDiscoveries">0회</strong>
+            <small>한 마리 이상 발견</small>
+          </div>
+
+          <div class="stat-card">
+            <span>출몰 상대도수</span>
+            <strong id="overallRate">0%</strong>
+            <small>발견 ÷ 관찰</small>
+          </div>
+
+          <div class="stat-card">
+            <span>주요 출몰 시간대</span>
+            <strong id="mainTime">-</strong>
+            <small>발견 기록 기준</small>
+          </div>
+        </div>
+      </article>
+    </div>
+
+    <section>
+      <div class="map-header">
+        <div>
+          <h2>360° 3D 캠퍼스 지도</h2>
+
+          <p class="section-description">
+            빈 공간을 좌우로 드래그하면 회전하고,
+            위아래로 드래그하면 시점이 바뀝니다.
+          </p>
+        </div>
+
+        <span
+          class="filter-status"
+          id="filterStatus"
+        >
+          전체 시간대 기준
+        </span>
+      </div>
+
+      <div class="map-controls">
+        <div class="button-group">
+          <button
+            class="filter-button active"
+            type="button"
+            data-filter="전체"
+          >
+            전체
+          </button>
+
+          <button
+            class="filter-button"
+            type="button"
+            data-filter="등교 시간"
+          >
+            등교 시간
+          </button>
+
+          <button
+            class="filter-button"
+            type="button"
+            data-filter="점심시간"
+          >
+            점심시간
+          </button>
+
+          <button
+            class="filter-button"
+            type="button"
+            data-filter="방과 후"
+          >
+            방과 후
+          </button>
+
+          <button
+            class="filter-button"
+            type="button"
+            data-filter="저녁"
+          >
+            저녁
+          </button>
+        </div>
+
+        <div class="button-group">
+          <button
+            class="control-button"
+            id="rotateLeft"
+            type="button"
+          >
+            ↶ 왼쪽
+          </button>
+
+          <button
+            class="control-button"
+            id="rotateRight"
+            type="button"
+          >
+            ↷ 오른쪽
+          </button>
+
+          <button
+            class="control-button"
+            id="zoomIn"
+            type="button"
+          >
+            + 확대
+          </button>
+
+          <button
+            class="control-button"
+            id="zoomOut"
+            type="button"
+          >
+            − 축소
+          </button>
+
+          <button
+            class="control-button"
+            id="resetScene"
+            type="button"
+          >
+            초기화
+          </button>
+        </div>
+      </div>
+
+      <div class="map-layout">
+        <div
+          class="scene-viewport"
+          id="sceneViewport"
+        >
+          <div class="scene-shadow"></div>
+
+          <div class="scene-camera">
+            <div
+              class="campus-scene"
+              id="campusScene"
+            >
+              <div
+                class="campus-base"
+                id="campusBase"
+              >
+                <div class="playground">
+                  <span>운동장</span>
+                </div>
+
+                <div class="road road-vertical"></div>
+                <div class="road road-horizontal"></div>
+                <div class="road road-diagonal"></div>
+              </div>
+            </div>
+          </div>
+
+          <div
+            class="angle-indicator"
+            id="angleIndicator"
+          >
+            회전 342° · 시점 57°
+          </div>
+
+          <p class="scene-guide">
+            좌우 드래그: 360° 회전 · 위아래 드래그: 시점 조절 ·
+            마우스 휠: 확대·축소 · 건물 클릭: 장소 선택
+          </p>
+        </div>
+
+        <aside class="place-details">
+          <h3 id="detailPlace">
+            화암신봉조관
+          </h3>
+
+          <p
+            class="detail-filter"
+            id="detailFilter"
+          >
+            전체 시간대의 관찰 결과입니다.
+          </p>
+
+          <div class="rate-box">
+            <span>출몰 상대도수</span>
+
+            <strong id="detailRate">0%</strong>
+
+            <div class="progress">
+              <div
+                class="progress-bar"
+                id="rateProgress"
+              ></div>
+            </div>
+          </div>
+
+          <dl class="detail-list">
+            <div class="detail-row">
+              <dt>전체 관찰 횟수</dt>
+              <dd id="detailObservation">0회</dd>
+            </div>
+
+            <div class="detail-row">
+              <dt>고양이 발견 횟수</dt>
+              <dd id="detailDiscovery">0회</dd>
+            </div>
+
+            <div class="detail-row">
+              <dt>가장 자주 발견된 고양이</dt>
+              <dd id="detailMainCat">-</dd>
+            </div>
+
+            <div class="detail-row">
+              <dt>주요 출몰 시간대</dt>
+              <dd id="detailMainTime">-</dd>
+            </div>
+
+            <div class="detail-row">
+              <dt>평균 발견 고양이 수</dt>
+              <dd id="detailAverage">0마리</dd>
+            </div>
+          </dl>
+        </aside>
+      </div>
+    </section>
+
+    <section>
+      <h2>캠퍼스 지도 참고 이미지</h2>
+
+      <p class="section-description">
+        실제 건물 번호와 위치를 확인하기 위한 기존 지도입니다.
+      </p>
+
+      <img
+        src="3D 캠퍼스 지도 다이어그램.png"
+        alt="이화여자고등학교 캠퍼스 지도"
+        style="
+          width: 100%;
+          max-height: 650px;
+          margin-top: 17px;
+          border: 1px solid var(--border);
+          border-radius: 16px;
+          object-fit: contain;
+          background: #f7faf8;
+        "
+      >
+    </section>
+
+    <section>
+      <h2>고양이 도감</h2>
+
+      <p class="section-description">
+        지도 위 발바닥 아이콘의 색으로 고양이를 구분합니다.
+      </p>
+
+      <div
+        class="cat-grid"
+        id="catGrid"
+      ></div>
+    </section>
+
+    <div class="bottom-grid">
+      <section>
+        <h2>관찰 기록 입력</h2>
+
+        <p class="section-description">
+          입력한 기록은 현재 브라우저에 저장됩니다.
+        </p>
+
+        <form id="observationForm">
+          <div class="form-grid">
+            <div class="field-group">
+              <label for="date">관찰 날짜</label>
+
+              <input
+                id="date"
+                name="date"
+                type="date"
+                required
+              >
+            </div>
+
+            <div class="field-group">
+              <label for="time">관찰 시각</label>
+
+              <input
+                id="time"
+                name="time"
+                type="time"
+                required
+              >
+            </div>
+
+            <div class="field-group">
+              <label for="timePeriod">시간대</label>
+
+              <select
+                id="timePeriod"
+                name="timePeriod"
+                required
+              >
+                <option value="">선택</option>
+                <option value="등교 시간">등교 시간</option>
+                <option value="점심시간">점심시간</option>
+                <option value="방과 후">방과 후</option>
+                <option value="저녁">저녁</option>
+              </select>
+            </div>
+
+            <div class="field-group">
+              <label for="weather">날씨</label>
+
+              <select
+                id="weather"
+                name="weather"
+                required
+              >
+                <option value="">선택</option>
+                <option value="맑음">맑음</option>
+                <option value="흐림">흐림</option>
+                <option value="비">비</option>
+                <option value="눈">눈</option>
+                <option value="기타">기타</option>
+              </select>
+            </div>
+
+            <div class="field-group full">
+              <label for="location">장소</label>
+
+              <select
+                id="location"
+                name="location"
+                required
+              ></select>
+
+              <div
+                class="custom-location"
+                id="customLocationBox"
+              >
+                <label for="customLocation">
+                  기타 장소 이름
+                </label>
+
+                <input
+                  id="customLocation"
+                  type="text"
+                  maxlength="30"
+                  placeholder="예: 화단 입구"
+                >
+              </div>
+            </div>
+
+            <div class="field-group full">
+              <label>발견한 고양이</label>
+
+              <div
+                class="cat-checkbox-grid"
+                id="catCheckboxGrid"
+              ></div>
+            </div>
+
+            <div class="field-group full">
+              <label for="memo">메모</label>
+
+              <textarea
+                id="memo"
+                name="memo"
+                maxlength="300"
+                placeholder="고양이의 행동과 주변 상황을 입력하세요."
+              ></textarea>
+            </div>
+          </div>
+
+          <div class="action-buttons">
+            <button
+              class="primary-button"
+              type="submit"
+            >
+              기록 저장
+            </button>
+
+            <button
+              class="secondary-button"
+              id="sampleButton"
+              type="button"
+            >
+              예시 데이터 불러오기
+            </button>
+
+            <button
+              class="danger-button"
+              id="deleteAllButton"
+              type="button"
+            >
+              전체 삭제
+            </button>
+          </div>
+
+          <p
+            class="form-message"
+            id="formMessage"
+            aria-live="polite"
+          ></p>
+        </form>
+      </section>
+
+      <section>
+        <h2>최근 관찰 기록</h2>
+
+        <p class="section-description">
+          최근 날짜와 시각 순서로 표시됩니다.
+        </p>
+
+        <div class="table-wrapper">
+          <table>
+            <thead>
+              <tr>
+                <th>날짜</th>
+                <th>시간</th>
+                <th>시간대</th>
+                <th>장소</th>
+                <th>발견한 고양이</th>
+                <th>날씨</th>
+                <th>메모</th>
+                <th>관리</th>
+              </tr>
+            </thead>
+
+            <tbody id="recordTableBody"></tbody>
+          </table>
+        </div>
+      </section>
+    </div>
+  </main>
+
+  <footer>
+    모든 관찰 데이터는 현재 브라우저의 localStorage에 저장됩니다.
+  </footer>
+
+  <script>
+    "use strict";
+
+    const STORAGE_KEY =
+      "ewhaCatCorrectCuboidRecordsV1";
+
+    const DEFAULT_PLACE =
+      "화암신봉조관";
+
+    const CATS = [
+      {
+        name: "홍합이",
+        className: "honghap",
+        image: "honghap.jpg",
+        symbol: "🟠"
+      },
+      {
+        name: "백합이",
+        className: "baekhap",
+        image: "baekhap.jpg",
+        symbol: "⚪"
+      },
+      {
+        name: "오드리",
+        className: "audrey",
+        image: "audrey.jpg",
+        symbol: "🔵"
+      },
+      {
+        name: "햅번",
+        className: "hepburn",
+        image: "hepburn.jpg",
+        symbol: "⚫"
+      },
+      {
+        name: "땅콩",
+        className: "peanut",
+        image: "peanut.jpg",
+        symbol: "🟡"
+      }
+    ];
+
+    const BUILDINGS = [
+      {
+        number: 1,
+        name: "화암신봉조관",
+        x: 410,
+        y: 175,
+        width: 155,
+        depth: 80,
+        height: 108,
+        colors: [
+          "#eeeeea",
+          "#d4d5d1",
+          "#c1c5c0",
+          "#b5bab5",
+          "#a7ada8"
+        ]
+      },
+      {
+        number: 2,
+        name: "이화백주년기념관",
+        x: 535,
+        y: 55,
+        width: 105,
+        depth: 88,
+        height: 92,
+        colors: [
+          "#c98264",
+          "#b86d52",
+          "#a86048",
+          "#94513d",
+          "#864734"
+        ]
+      },
+      {
+        number: 3,
+        name: "신승기념관",
+        x: 530,
+        y: 258,
+        width: 100,
+        depth: 84,
+        height: 74,
+        colors: [
+          "#e8e5df",
+          "#cbc7be",
+          "#b8b4ac",
+          "#aaa69e",
+          "#9d9991"
+        ]
+      },
+      {
+        number: 4,
+        name: "이화학사",
+        x: 82,
+        y: 338,
+        width: 148,
+        depth: 96,
+        height: 90,
+        colors: [
+          "#c87d61",
+          "#b86b50",
+          "#a85f47",
+          "#96513c",
+          "#894633"
+        ]
+      },
+      {
+        number: 5,
+        name: "유관순기념관",
+        x: 22,
+        y: 220,
+        width: 182,
+        depth: 92,
+        height: 64,
+        colors: [
+          "#efeee9",
+          "#d8d8d3",
+          "#c7c8c3",
+          "#b5b7b2",
+          "#a8aaa5"
+        ]
+      },
+      {
+        number: 6,
+        name: "이화체육관",
+        x: 28,
+        y: 40,
+        width: 152,
+        depth: 88,
+        height: 60,
+        colors: [
+          "#dadcd9",
+          "#c2c6c2",
+          "#afb4b0",
+          "#a1a7a2",
+          "#939a95"
+        ]
+      },
+      {
+        number: 7,
+        name: "이화도서관",
+        x: 307,
+        y: 78,
+        width: 92,
+        depth: 74,
+        height: 68,
+        colors: [
+          "#b96b50",
+          "#aa5e44",
+          "#9b523a",
+          "#8d4833",
+          "#7e3d2b"
+        ]
+      },
+      {
+        number: 8,
+        name: "스크랜튼관",
+        x: 230,
+        y: 15,
+        width: 192,
+        depth: 67,
+        height: 84,
+        colors: [
+          "#eeeeea",
+          "#d5d6d2",
+          "#c3c6c1",
+          "#b4b8b3",
+          "#a4aaa5"
+        ]
+      },
+      {
+        number: 9,
+        name: "비전관",
+        x: 425,
+        y: 22,
+        width: 105,
+        depth: 63,
+        height: 78,
+        colors: [
+          "#c67b60",
+          "#b3674d",
+          "#a45a43",
+          "#934d38",
+          "#85412f"
+        ]
+      }
+    ];
+
+    const OTHER_PLACES = [
+      "노천극장",
+      "운동장",
+      "서문으로 가는 길",
+      "동문으로 가는 길"
+    ];
+
+    const SAMPLE_RECORDS = [
+      {
+        id: "sample-1",
+        date: "2025-05-18",
+        time: "16:20",
+        timePeriod: "방과 후",
+        location: "이화체육관",
+        cats: ["홍합이", "땅콩"],
+        weather: "맑음",
+        memo: "운동장 뒤편에서 발견"
+      },
+      {
+        id: "sample-2",
+        date: "2025-05-19",
+        time: "12:40",
+        timePeriod: "점심시간",
+        location: "유관순기념관",
+        cats: ["백합이"],
+        weather: "흐림",
+        memo: "건물 입구 근처"
+      },
+      {
+        id: "sample-3",
+        date: "2025-05-19",
+        time: "18:10",
+        timePeriod: "저녁",
+        location: "이화도서관",
+        cats: ["오드리", "햅번"],
+        weather: "맑음",
+        memo: "나란히 앉아 있었음"
+      },
+      {
+        id: "sample-4",
+        date: "2025-05-20",
+        time: "16:10",
+        timePeriod: "방과 후",
+        location: "화암신봉조관",
+        cats: ["홍합이"],
+        weather: "맑음",
+        memo: "계단 앞에서 쉬고 있었음"
+      },
+      {
+        id: "sample-5",
+        date: "2025-05-20",
+        time: "18:05",
+        timePeriod: "저녁",
+        location: "서문으로 가는 길",
+        cats: ["땅콩"],
+        weather: "맑음",
+        memo: "사람을 잘 따라옴"
+      },
+      {
+        id: "sample-6",
+        date: "2025-05-21",
+        time: "12:30",
+        timePeriod: "점심시간",
+        location: "운동장",
+        cats: ["백합이"],
+        weather: "맑음",
+        memo: "트랙 안쪽 잔디"
+      },
+      {
+        id: "sample-7",
+        date: "2025-05-21",
+        time: "16:40",
+        timePeriod: "방과 후",
+        location: "이화학사",
+        cats: ["홍합이", "오드리"],
+        weather: "흐림",
+        memo: "화단 근처에서 발견"
+      },
+      {
+        id: "sample-8",
+        date: "2025-05-22",
+        time: "08:05",
+        timePeriod: "등교 시간",
+        location: "스크랜튼관",
+        cats: [],
+        weather: "맑음",
+        memo: "조용했음"
+      }
+    ];
+
+    let records =
+      loadRecords();
+
+    let selectedPlace =
+      DEFAULT_PLACE;
+
+    let selectedTime =
+      "전체";
+
+    let rotationX = 57;
+    let rotationZ = -18;
+    let sceneScale = 0.9;
+
+    let dragging = false;
+    let dragMoved = false;
+    let dragStartX = 0;
+    let dragStartY = 0;
+    let startRotationX = 0;
+    let startRotationZ = 0;
+
+    const campusBase =
+      document.getElementById(
+        "campusBase"
+      );
+
+    const campusScene =
+      document.getElementById(
+        "campusScene"
+      );
+
+    const sceneViewport =
+      document.getElementById(
+        "sceneViewport"
+      );
+
+    const angleIndicator =
+      document.getElementById(
+        "angleIndicator"
+      );
+
+    const form =
+      document.getElementById(
+        "observationForm"
+      );
+
+    const locationSelect =
+      document.getElementById(
+        "location"
+      );
+
+    const customLocationBox =
+      document.getElementById(
+        "customLocationBox"
+      );
+
+    const customLocationInput =
+      document.getElementById(
+        "customLocation"
+      );
+
+    const formMessage =
+      document.getElementById(
+        "formMessage"
+      );
+
+    function cloneSampleRecords() {
+      return SAMPLE_RECORDS.map(
+        (record) => ({
+          ...record,
+          cats: [...record.cats]
+        })
+      );
+    }
+
+    function loadRecords() {
+      try {
+        const stored =
+          localStorage.getItem(
+            STORAGE_KEY
+          );
+
+        if (!stored) {
+          return cloneSampleRecords();
+        }
+
+        const parsed =
+          JSON.parse(stored);
+
+        return Array.isArray(parsed)
+          ? parsed
+          : [];
+      } catch (error) {
+        console.error(error);
+        return cloneSampleRecords();
+      }
+    }
+
+    function saveRecords() {
+      try {
+        localStorage.setItem(
+          STORAGE_KEY,
+          JSON.stringify(records)
+        );
+      } catch (error) {
+        console.error(error);
+
+        formMessage.textContent =
+          "기록을 저장하지 못했습니다.";
+      }
+    }
+
+    function createId() {
+      if (
+        window.crypto &&
+        typeof window.crypto.randomUUID ===
+          "function"
+      ) {
+        return window.crypto.randomUUID();
+      }
+
+      return (
+        `record-${Date.now()}-` +
+        Math.random()
+          .toString(16)
+          .slice(2)
+      );
+    }
+
+    function createBuildings() {
+      BUILDINGS.forEach(
+        (buildingData) => {
+          const building =
+            document.createElement(
+              "button"
+            );
+
+          building.type = "button";
+
+          building.className =
+            "building";
+
+          building.dataset.place =
+            buildingData.name;
+
+          building.setAttribute(
+            "aria-label",
+            `${buildingData.name} 선택`
+          );
+
+          building.style.left =
+            `${buildingData.x}px`;
+
+          building.style.top =
+            `${buildingData.y}px`;
+
+          building.style.setProperty(
+            "--w",
+            `${buildingData.width}px`
+          );
+
+          building.style.setProperty(
+            "--d",
+            `${buildingData.depth}px`
+          );
+
+          building.style.setProperty(
+            "--h",
+            `${buildingData.height}px`
+          );
+
+          building.style.setProperty(
+            "--roof",
+            buildingData.colors[0]
+          );
+
+          building.style.setProperty(
+            "--front",
+            buildingData.colors[1]
+          );
+
+          building.style.setProperty(
+            "--back",
+            buildingData.colors[2]
+          );
+
+          building.style.setProperty(
+            "--left",
+            buildingData.colors[3]
+          );
+
+          building.style.setProperty(
+            "--right",
+            buildingData.colors[4]
+          );
+
+          building.innerHTML = `
+            <span class="building-face face-top">
+              <span class="building-name">
+                ${escapeHtml(buildingData.name)}
+              </span>
+            </span>
+
+            <span class="building-face face-front"></span>
+            <span class="building-face face-back"></span>
+            <span class="building-face face-left"></span>
+            <span class="building-face face-right"></span>
+
+            <span class="building-number">
+              ${buildingData.number}
+            </span>
+
+            <span class="cat-pins"></span>
+          `;
+
+          building.addEventListener(
+            "click",
+            (event) => {
+              event.stopPropagation();
+
+              if (dragMoved) {
+                return;
+              }
+
+              selectedPlace =
+                buildingData.name;
+
+              renderBuildings();
+              renderPlaceDetails();
+            }
+          );
+
+          campusBase.appendChild(
+            building
+          );
+        }
+      );
+    }
+
+    function createTrees() {
+      const treePositions = [
+        [205, 120],
+        [250, 255],
+        [288, 365],
+        [360, 330],
+        [445, 355],
+        [475, 130],
+        [590, 165],
+        [605, 380],
+        [55, 380],
+        [250, 85],
+        [380, 410]
+      ];
+
+      treePositions.forEach(
+        ([left, top]) => {
+          const tree =
+            document.createElement(
+              "div"
+            );
+
+          tree.className =
+            "tree";
+
+          tree.style.left =
+            `${left}px`;
+
+          tree.style.top =
+            `${top}px`;
+
+          campusBase.appendChild(
+            tree
+          );
+        }
+      );
+    }
+
+    function createCatCards() {
+      const grid =
+        document.getElementById(
+          "catGrid"
+        );
+
+      CATS.forEach((cat) => {
+        const card =
+          document.createElement(
+            "article"
+          );
+
+        card.className =
+          "cat-card";
+
+        card.innerHTML = `
+          <img
+            class="cat-photo"
+            src="${cat.image}"
+            alt="${cat.name} 사진"
+          >
+
+          <div class="cat-content">
+            <div class="cat-title">
+              <h3>${cat.name}</h3>
+              <span
+                class="cat-color ${cat.className}"
+              ></span>
+            </div>
+
+            <p
+              class="cat-stat"
+              id="${cat.className}Stats"
+            ></p>
+          </div>
+        `;
+
+        grid.appendChild(card);
+      });
+    }
+
+    function createLocationOptions() {
+      const places = [
+        ...BUILDINGS.map(
+          (building) =>
+            building.name
+        ),
+        ...OTHER_PLACES
+      ];
+
+      locationSelect.innerHTML =
+        '<option value="">장소 선택</option>';
+
+      places.forEach((place) => {
+        const option =
+          document.createElement(
+            "option"
+          );
+
+        option.value = place;
+        option.textContent = place;
+
+        locationSelect.appendChild(
+          option
+        );
+      });
+
+      const customOption =
+        document.createElement(
+          "option"
+        );
+
+      customOption.value = "기타";
+      customOption.textContent =
+        "기타 장소 직접 입력";
+
+      locationSelect.appendChild(
+        customOption
+      );
+    }
+
+    function createCatCheckboxes() {
+      const grid =
+        document.getElementById(
+          "catCheckboxGrid"
+        );
+
+      CATS.forEach((cat, index) => {
+        const box =
+          document.createElement(
+            "div"
+          );
+
+        box.className =
+          "cat-checkbox";
+
+        box.innerHTML = `
+          <input
+            id="cat-${index}"
+            type="checkbox"
+            name="cats"
+            value="${cat.name}"
+          >
+
+          <label for="cat-${index}">
+            ${cat.symbol} ${cat.name}
+          </label>
+        `;
+
+        grid.appendChild(box);
+      });
+
+      const noneBox =
+        document.createElement(
+          "div"
+        );
+
+      noneBox.className =
+        "cat-checkbox";
+
+      noneBox.innerHTML = `
+        <input
+          id="catNone"
+          type="checkbox"
+          name="cats"
+          value="발견하지 못함"
+        >
+
+        <label for="catNone">
+          ➖ 미발견
+        </label>
+      `;
+
+      grid.appendChild(noneBox);
+
+      setupCatCheckboxEvents();
+    }
+
+    function setupCatCheckboxEvents() {
+      const noneCheckbox =
+        document.getElementById(
+          "catNone"
+        );
+
+      noneCheckbox.addEventListener(
+        "change",
+        () => {
+          if (!noneCheckbox.checked) {
+            return;
+          }
+
+          document
+            .querySelectorAll(
+              'input[name="cats"]'
+            )
+            .forEach(
+              (checkbox) => {
+                if (
+                  checkbox !==
+                  noneCheckbox
+                ) {
+                  checkbox.checked =
+                    false;
+                }
+              }
+            );
+        }
+      );
+
+      document
+        .querySelectorAll(
+          'input[name="cats"]:not(#catNone)'
+        )
+        .forEach((checkbox) => {
+          checkbox.addEventListener(
+            "change",
+            () => {
+              if (checkbox.checked) {
+                noneCheckbox.checked =
+                  false;
+              }
+            }
+          );
+        });
+    }
+
+    function isDiscovery(record) {
+      return (
+        Array.isArray(record.cats) &&
+        record.cats.length > 0
+      );
+    }
+
+    function percentage(part, total) {
+      if (total === 0) {
+        return 0;
+      }
+
+      return Number(
+        (
+          part /
+          total *
+          100
+        ).toFixed(1)
+      );
+    }
+
+    function formatPercent(value) {
+      return Number.isInteger(value)
+        ? `${value}%`
+        : `${value.toFixed(1)}%`;
+    }
+
+    function getMode(values) {
+      if (values.length === 0) {
+        return "-";
+      }
+
+      const counts = {};
+
+      values.forEach((value) => {
+        counts[value] =
+          (counts[value] || 0) + 1;
+      });
+
+      return Object.entries(counts)
+        .sort(
+          (first, second) =>
+            second[1] - first[1]
+        )[0][0];
+    }
+
+    function getFilteredRecords(
+      place = null
+    ) {
+      return records.filter(
+        (record) => {
+          const placeMatches =
+            place === null ||
+            record.location === place;
+
+          const timeMatches =
+            selectedTime === "전체" ||
+            record.timePeriod ===
+              selectedTime;
+
+          return (
+            placeMatches &&
+            timeMatches
+          );
+        }
+      );
+    }
+
+    function getPlaceStats(place) {
+      const filtered =
+        getFilteredRecords(place);
+
+      const observations =
+        filtered.length;
+
+      const discoveryRecords =
+        filtered.filter(
+          isDiscovery
+        );
+
+      const discoveries =
+        discoveryRecords.length;
+
+      const allCats =
+        filtered.flatMap(
+          (record) =>
+            Array.isArray(record.cats)
+              ? record.cats
+              : []
+        );
+
+      const totalCatCount =
+        filtered.reduce(
+          (sum, record) =>
+            sum +
+            (
+              Array.isArray(record.cats)
+                ? record.cats.length
+                : 0
+            ),
+          0
+        );
+
+      return {
+        observations,
+        discoveries,
+        rate: percentage(
+          discoveries,
+          observations
+        ),
+        mainCat:
+          getMode(allCats),
+        mainTime:
+          getMode(
+            discoveryRecords.map(
+              (record) =>
+                record.timePeriod
+            )
+          ),
+        average:
+          observations === 0
+            ? 0
+            : Number(
+                (
+                  totalCatCount /
+                  observations
+                ).toFixed(2)
+              ),
+        cats:
+          [...new Set(allCats)]
+      };
+    }
+
+    function renderAll() {
+      renderGlobalStats();
+      renderBuildings();
+      renderPlaceDetails();
+      renderCatCards();
+      renderTable();
+    }
+
+    function renderGlobalStats() {
+      const total =
+        records.length;
+
+      const discoveryRecords =
+        records.filter(
+          isDiscovery
+        );
+
+      const discoveries =
+        discoveryRecords.length;
+
+      document.getElementById(
+        "totalObservations"
+      ).textContent =
+        `${total}회`;
+
+      document.getElementById(
+        "totalDiscoveries"
+      ).textContent =
+        `${discoveries}회`;
+
+      document.getElementById(
+        "overallRate"
+      ).textContent =
+        formatPercent(
+          percentage(
+            discoveries,
+            total
+          )
+        );
+
+      document.getElementById(
+        "mainTime"
+      ).textContent =
+        getMode(
+          discoveryRecords.map(
+            (record) =>
+              record.timePeriod
+          )
+        );
+    }
+
+    function renderBuildings() {
+      document
+        .querySelectorAll(
+          ".building"
+        )
+        .forEach((building) => {
+          const place =
+            building.dataset.place;
+
+          const stats =
+            getPlaceStats(place);
+
+          building.classList.toggle(
+            "selected",
+            place === selectedPlace
+          );
+
+          const pinBox =
+            building.querySelector(
+              ".cat-pins"
+            );
+
+          pinBox.innerHTML = "";
+
+          if (
+            stats.observations > 0 &&
+            stats.cats.length === 0
+          ) {
+            const pin =
+              document.createElement(
+                "span"
+              );
+
+            pin.className =
+              "cat-pin none";
+
+            pin.textContent = "−";
+            pin.title = "미발견 기록";
+
+            pinBox.appendChild(pin);
+          }
+
+          stats.cats.forEach(
+            (catName) => {
+              const cat =
+                CATS.find(
+                  (item) =>
+                    item.name ===
+                    catName
+                );
+
+              if (!cat) {
+                return;
+              }
+
+              const pin =
+                document.createElement(
+                  "span"
+                );
+
+              pin.className =
+                `cat-pin ${cat.className}`;
+
+              pin.textContent = "🐾";
+              pin.title = cat.name;
+
+              pinBox.appendChild(pin);
+            }
+          );
+        });
+
+      document.getElementById(
+        "filterStatus"
+      ).textContent =
+        selectedTime === "전체"
+          ? "전체 시간대 기준"
+          : `${selectedTime} 기준`;
+    }
+
+    function renderPlaceDetails() {
+      const stats =
+        getPlaceStats(
+          selectedPlace
+        );
+
+      document.getElementById(
+        "detailPlace"
+      ).textContent =
+        selectedPlace;
+
+      document.getElementById(
+        "detailFilter"
+      ).textContent =
+        selectedTime === "전체"
+          ? "전체 시간대의 관찰 결과입니다."
+          : `${selectedTime} 기록만 분석한 결과입니다.`;
+
+      document.getElementById(
+        "detailRate"
+      ).textContent =
+        formatPercent(stats.rate);
+
+      document.getElementById(
+        "rateProgress"
+      ).style.width =
+        `${Math.min(stats.rate, 100)}%`;
+
+      document.getElementById(
+        "detailObservation"
+      ).textContent =
+        `${stats.observations}회`;
+
+      document.getElementById(
+        "detailDiscovery"
+      ).textContent =
+        `${stats.discoveries}회`;
+
+      document.getElementById(
+        "detailMainCat"
+      ).textContent =
+        stats.mainCat;
+
+      document.getElementById(
+        "detailMainTime"
+      ).textContent =
+        stats.mainTime;
+
+      document.getElementById(
+        "detailAverage"
+      ).textContent =
+        `${stats.average}마리`;
+    }
+
+    function renderCatCards() {
+      CATS.forEach((cat) => {
+        const catRecords =
+          records.filter(
+            (record) =>
+              Array.isArray(record.cats) &&
+              record.cats.includes(
+                cat.name
+              )
+          );
+
+        const mainPlace =
+          getMode(
+            catRecords.map(
+              (record) =>
+                record.location
+            )
+          );
+
+        const mainTime =
+          getMode(
+            catRecords.map(
+              (record) =>
+                record.timePeriod
+            )
+          );
+
+        document.getElementById(
+          `${cat.className}Stats`
+        ).innerHTML =
+          `발견 ${catRecords.length}회<br>` +
+          `주요 장소: ${escapeHtml(mainPlace)}<br>` +
+          `주요 시간대: ${escapeHtml(mainTime)}`;
+      });
+    }
+
+    function renderTable() {
+      const body =
+        document.getElementById(
+          "recordTableBody"
+        );
+
+      body.innerHTML = "";
+
+      const sortedRecords =
+        [...records].sort(
+          (first, second) => {
+            const firstDate =
+              `${first.date}T${first.time}`;
+
+            const secondDate =
+              `${second.date}T${second.time}`;
+
+            return secondDate.localeCompare(
+              firstDate
+            );
+          }
+        );
+
+      if (
+        sortedRecords.length === 0
+      ) {
+        const row =
+          document.createElement(
+            "tr"
+          );
+
+        const cell =
+          document.createElement(
+            "td"
+          );
+
+        cell.colSpan = 8;
+        cell.textContent =
+          "저장된 기록이 없습니다.";
+        cell.style.padding = "30px";
+        cell.style.textAlign = "center";
+
+        row.appendChild(cell);
+        body.appendChild(row);
+
+        return;
+      }
+
+      sortedRecords.forEach(
+        (record) => {
+          const row =
+            document.createElement(
+              "tr"
+            );
+
+          const catText =
+            Array.isArray(record.cats) &&
+            record.cats.length > 0
+              ? record.cats.join(", ")
+              : "발견하지 못함";
+
+          const values = [
+            record.date,
+            record.time,
+            record.timePeriod,
+            record.location,
+            catText,
+            record.weather,
+            record.memo || "-"
+          ];
+
+          values.forEach((value) => {
+            const cell =
+              document.createElement(
+                "td"
+              );
+
+            cell.textContent = value;
+            row.appendChild(cell);
+          });
+
+          const actionCell =
+            document.createElement(
+              "td"
+            );
+
+          const deleteButton =
+            document.createElement(
+              "button"
+            );
+
+          deleteButton.type =
+            "button";
+
+          deleteButton.className =
+            "delete-record";
+
+          deleteButton.textContent =
+            "삭제";
+
+          deleteButton.addEventListener(
+            "click",
+            () => {
+              if (
+                !window.confirm(
+                  "이 기록을 삭제할까요?"
+                )
+              ) {
+                return;
+              }
+
+              records =
+                records.filter(
+                  (item) =>
+                    item.id !==
+                    record.id
+                );
+
+              saveRecords();
+              renderAll();
+            }
+          );
+
+          actionCell.appendChild(
+            deleteButton
+          );
+
+          row.appendChild(
+            actionCell
+          );
+
+          body.appendChild(row);
+        }
+      );
+    }
+
+    function escapeHtml(value) {
+      return String(value)
+        .replaceAll("&", "&amp;")
+        .replaceAll("<", "&lt;")
+        .replaceAll(">", "&gt;")
+        .replaceAll('"', "&quot;")
+        .replaceAll("'", "&#039;");
+    }
+
+    function normalizeAngle(angle) {
+      const normalized =
+        angle % 360;
+
+      return normalized < 0
+        ? normalized + 360
+        : normalized;
+    }
+
+    function getMaximumScale() {
+      if (
+        window.innerWidth <= 620
+      ) {
+        return 0.56;
+      }
+
+      if (
+        window.innerWidth <= 820
+      ) {
+        return 0.72;
+      }
+
+      return 1.35;
+    }
+
+    function updateSceneTransform() {
+      const displayedScale =
+        Math.min(
+          sceneScale,
+          getMaximumScale()
+        );
+
+      campusScene.style.transform =
+        `rotateX(${rotationX}deg) ` +
+        `rotateZ(${rotationZ}deg) ` +
+        `scale(${displayedScale})`;
+
+      angleIndicator.textContent =
+        `회전 ${Math.round(
+          normalizeAngle(rotationZ)
+        )}° · 시점 ${Math.round(
+          rotationX
+        )}°`;
+    }
+
+    function resetScenePosition() {
+      rotationX = 57;
+      rotationZ = -18;
+      sceneScale = 0.9;
+
+      updateSceneTransform();
+    }
+
+    function resetTimeFilter() {
+      selectedTime = "전체";
+
+      document
+        .querySelectorAll(
+          ".filter-button"
+        )
+        .forEach((button) => {
+          button.classList.toggle(
+            "active",
+            button.dataset.filter ===
+              "전체"
+          );
+        });
+    }
+
+    function resetInterface() {
+      selectedPlace =
+        DEFAULT_PLACE;
+
+      resetTimeFilter();
+      resetScenePosition();
+
+      form.reset();
+
+      customLocationBox.classList.remove(
+        "visible"
+      );
+
+      customLocationInput.required =
+        false;
+
+      formMessage.textContent =
+        "";
+
+      setToday();
+      renderAll();
+
+      window.scrollTo({
+        top: 0,
+        behavior: "smooth"
+      });
+    }
+
+    document
+      .querySelectorAll(
+        ".filter-button"
+      )
+      .forEach((button) => {
+        button.addEventListener(
+          "click",
+          () => {
+            selectedTime =
+              button.dataset.filter;
+
+            document
+              .querySelectorAll(
+                ".filter-button"
+              )
+              .forEach(
+                (otherButton) => {
+                  otherButton.classList.toggle(
+                    "active",
+                    otherButton ===
+                      button
+                  );
+                }
+              );
+
+            renderBuildings();
+            renderPlaceDetails();
+          }
+        );
+      });
+
+    document
+      .getElementById(
+        "rotateLeft"
+      )
+      .addEventListener(
+        "click",
+        () => {
+          rotationZ -= 15;
+          updateSceneTransform();
+        }
+      );
+
+    document
+      .getElementById(
+        "rotateRight"
+      )
+      .addEventListener(
+        "click",
+        () => {
+          rotationZ += 15;
+          updateSceneTransform();
+        }
+      );
+
+    document
+      .getElementById(
+        "zoomIn"
+      )
+      .addEventListener(
+        "click",
+        () => {
+          sceneScale =
+            Math.min(
+              1.35,
+              sceneScale + 0.08
+            );
+
+          updateSceneTransform();
+        }
+      );
+
+    document
+      .getElementById(
+        "zoomOut"
+      )
+      .addEventListener(
+        "click",
+        () => {
+          sceneScale =
+            Math.max(
+              0.42,
+              sceneScale - 0.08
+            );
+
+          updateSceneTransform();
+        }
+      );
+
+    document
+      .getElementById(
+        "resetScene"
+      )
+      .addEventListener(
+        "click",
+        resetScenePosition
+      );
+
+    sceneViewport.addEventListener(
+      "pointerdown",
+      (event) => {
+        if (
+          event.target.closest(
+            ".building"
+          )
+        ) {
+          return;
+        }
+
+        dragging = true;
+        dragMoved = false;
+
+        dragStartX =
+          event.clientX;
+
+        dragStartY =
+          event.clientY;
+
+        startRotationX =
+          rotationX;
+
+        startRotationZ =
+          rotationZ;
+
+        sceneViewport.classList.add(
+          "dragging"
+        );
+
+        sceneViewport.setPointerCapture(
+          event.pointerId
+        );
+      }
+    );
+
+    sceneViewport.addEventListener(
+      "pointermove",
+      (event) => {
+        if (!dragging) {
+          return;
+        }
+
+        const differenceX =
+          event.clientX -
+          dragStartX;
+
+        const differenceY =
+          event.clientY -
+          dragStartY;
+
+        if (
+          Math.abs(differenceX) > 3 ||
+          Math.abs(differenceY) > 3
+        ) {
+          dragMoved = true;
+        }
+
+        rotationZ =
+          startRotationZ +
+          differenceX * 0.45;
+
+        rotationX =
+          Math.max(
+            24,
+            Math.min(
+              78,
+              startRotationX -
+              differenceY * 0.22
+            )
+          );
+
+        updateSceneTransform();
+      }
+    );
+
+    function endDragging() {
+      dragging = false;
+
+      sceneViewport.classList.remove(
+        "dragging"
+      );
+
+      window.setTimeout(
+        () => {
+          dragMoved = false;
+        },
+        40
+      );
+    }
+
+    sceneViewport.addEventListener(
+      "pointerup",
+      endDragging
+    );
+
+    sceneViewport.addEventListener(
+      "pointercancel",
+      endDragging
+    );
+
+    sceneViewport.addEventListener(
+      "wheel",
+      (event) => {
+        event.preventDefault();
+
+        const change =
+          event.deltaY < 0
+            ? 0.06
+            : -0.06;
+
+        sceneScale =
+          Math.max(
+            0.42,
+            Math.min(
+              1.35,
+              sceneScale + change
+            )
+          );
+
+        updateSceneTransform();
+      },
+      {
+        passive: false
+      }
+    );
+
+    locationSelect.addEventListener(
+      "change",
+      () => {
+        const isCustom =
+          locationSelect.value ===
+          "기타";
+
+        customLocationBox.classList.toggle(
+          "visible",
+          isCustom
+        );
+
+        customLocationInput.required =
+          isCustom;
+
+        if (!isCustom) {
+          customLocationInput.value =
+            "";
+        }
+      }
+    );
+
+    form.addEventListener(
+      "submit",
+      (event) => {
+        event.preventDefault();
+
+        const formData =
+          new FormData(form);
+
+        const selectedCats = [
+          ...document.querySelectorAll(
+            'input[name="cats"]:checked'
+          )
+        ]
+          .map(
+            (checkbox) =>
+              checkbox.value
+          )
+          .filter(
+            (cat) =>
+              cat !==
+              "발견하지 못함"
+          );
+
+        const noneSelected =
+          document.getElementById(
+            "catNone"
+          ).checked;
+
+        if (
+          selectedCats.length === 0 &&
+          !noneSelected
+        ) {
+          formMessage.textContent =
+            "발견한 고양이 또는 미발견을 선택하세요.";
+
+          return;
+        }
+
+        let finalLocation =
+          String(
+            formData.get(
+              "location"
+            ) || ""
+          );
+
+        if (
+          finalLocation === "기타"
+        ) {
+          finalLocation =
+            customLocationInput.value.trim();
+        }
+
+        if (!finalLocation) {
+          formMessage.textContent =
+            "관찰 장소를 입력하세요.";
+
+          return;
+        }
+
+        const record = {
+          id: createId(),
+          date: String(
+            formData.get("date") || ""
+          ),
+          time: String(
+            formData.get("time") || ""
+          ),
+          timePeriod: String(
+            formData.get(
+              "timePeriod"
+            ) || ""
+          ),
+          location:
+            finalLocation,
+          cats:
+            selectedCats,
+          weather: String(
+            formData.get(
+              "weather"
+            ) || ""
+          ),
+          memo: String(
+            formData.get(
+              "memo"
+            ) || ""
+          ).trim()
+        };
+
+        records.push(record);
+        saveRecords();
+
+        selectedPlace =
+          finalLocation;
+
+        form.reset();
+
+        customLocationBox.classList.remove(
+          "visible"
+        );
+
+        customLocationInput.required =
+          false;
+
+        setToday();
+        renderAll();
+
+        formMessage.textContent =
+          `${finalLocation}의 관찰 기록을 저장했습니다.`;
+      }
+    );
+
+    document
+      .getElementById(
+        "sampleButton"
+      )
+      .addEventListener(
+        "click",
+        () => {
+          if (
+            !window.confirm(
+              "현재 기록을 예시 데이터로 바꿀까요?"
+            )
+          ) {
+            return;
+          }
+
+          records =
+            cloneSampleRecords();
+
+          selectedPlace =
+            DEFAULT_PLACE;
+
+          resetTimeFilter();
+          resetScenePosition();
+          saveRecords();
+          renderAll();
+
+          formMessage.textContent =
+            "예시 데이터를 불러왔습니다.";
+        }
+      );
+
+    document
+      .getElementById(
+        "deleteAllButton"
+      )
+      .addEventListener(
+        "click",
+        () => {
+          if (
+            !window.confirm(
+              "모든 관찰 기록을 삭제할까요?"
+            )
+          ) {
+            return;
+          }
+
+          records = [];
+
+          selectedPlace =
+            DEFAULT_PLACE;
+
+          resetTimeFilter();
+          resetScenePosition();
+          saveRecords();
+          renderAll();
+
+          formMessage.textContent =
+            "모든 관찰 기록을 삭제했습니다.";
+        }
+      );
+
+    document
+      .getElementById(
+        "homeResetButton"
+      )
+      .addEventListener(
+        "click",
+        resetInterface
+      );
+
+    window.addEventListener(
+      "resize",
+      updateSceneTransform
+    );
+
+    function setToday() {
+      const dateInput =
+        document.getElementById(
+          "date"
+        );
+
+      if (dateInput.value) {
+        return;
+      }
+
+      const now =
+        new Date();
+
+      const offset =
+        now.getTimezoneOffset() *
+        60 *
+        1000;
+
+      dateInput.value =
+        new Date(
+          now.getTime() -
+          offset
+        )
+          .toISOString()
+          .slice(0, 10);
+    }
+
+    createBuildings();
+    createTrees();
+    createCatCards();
+    createLocationOptions();
+    createCatCheckboxes();
+
+    setToday();
+    saveRecords();
+    updateSceneTransform();
+    renderAll();
+  </script>
+</body>
+</html>
